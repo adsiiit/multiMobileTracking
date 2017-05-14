@@ -1,6 +1,8 @@
+import java.util.Random;
+import java.util.Arrays;
 class Vehicle {
 
-  // All the usual stuff
+
   PVector position;
   PVector velocity;
   PVector acceleration;
@@ -19,13 +21,12 @@ class Vehicle {
   }
 
   void applyForce(PVector force) {
-    // We could add mass here if we want A = F / M
     acceleration.add(force);
   }
   
-  void applyBehaviors(ArrayList<Vehicle> vehicles, ArrayList<Car> cars) {
+  void applyBehaviors(ArrayList<Vehicle> vehicles, ArrayList<Car> cars, int[] buffer) {
      PVector separateForce = separate(vehicles);
-     PVector seekForce = seek(cars);
+     PVector seekForce = seek(cars, vehicles, buffer);
      separateForce.mult(2);
      seekForce.mult(1);
      applyForce(separateForce);
@@ -34,14 +35,34 @@ class Vehicle {
   
     // A method that calculates a steering force towards a target
   // STEER = DESIRED MINUS VELOCITY
-  PVector seek(ArrayList<Car> cars) {
+  PVector seek(ArrayList<Car> cars, ArrayList<Vehicle> vehicles, int[] buffer) {
+    int maxcap = vehicles.size()/cars.size();
+    if(maxcap == 0)
+      maxcap = 1;
     PVector target = new PVector();
     float dist = 99999999;
+    int index = cars.size();
+    int carInd = 0;
     for(Car c : cars){
-      if(PVector.dist(position, c.position) < dist){
-        dist = PVector.dist(position, c.position);
-        target = c.position;
+      try{
+        if(PVector.dist(position, c.position) < dist && buffer[carInd] < maxcap){
+          dist = PVector.dist(position, c.position);
+          index = carInd;
+        }
+        carInd++;
+      }catch(Exception e){
+        System.out.println(e);
       }
+    }
+    if(index != cars.size()){
+      target = cars.get(index).position;
+      buffer[index]++;
+    }
+    else{
+      Random ran = new Random();
+      int x = ran.nextInt(cars.size());
+      target = cars.get(x).position;
+      Arrays.fill(buffer, new Integer(0));
     }
     PVector desired = PVector.sub(target,position);  // A vector pointing from the position to the target
     
